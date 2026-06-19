@@ -1,0 +1,76 @@
+# ---------------------------------------------------------------------------
+# Configuração do vaga-gringa-bot
+# ---------------------------------------------------------------------------
+
+# Substrings (minúsculas) que marcam uma vaga como "engenharia de software".
+# Ajuste à vontade. Termos do seu stack ajudam a pegar vagas mal-tituladas.
+software_titles:
+  - software engineer
+  - software developer
+  - frontend
+  - front-end
+  - front end
+  - backend
+  - back-end
+  - back end
+  - full stack
+  - full-stack
+  - fullstack
+  - web engineer
+  - product engineer
+  - react
+  - typescript
+  - node
+  - swe
+  - engenheir   # pega "engenheiro/engenheira de software" em vagas em PT
+
+# Fontes com API/RSS pública (confiáveis). Ligue/desligue conforme quiser.
+sources:
+  remoteok: true
+  remotive: true
+  weworkremotely: true
+
+# -------------------------------------------------------------------------
+# SUAS EMPRESAS-ALVO via ATS (Greenhouse / Lever / Ashby).
+# Esta é a parte de MAIOR sinal: vagas direto na fonte, antes do LinkedIn.
+#
+# COMO DESCOBRIR o "slug": abra a página de carreiras da empresa e olhe a URL.
+#   Ashby      -> jobs.ashbyhq.com/SLUG        (ex.: .../posthog  -> slug: posthog)
+#   Greenhouse -> boards.greenhouse.io/SLUG    (ou job-boards.greenhouse.io/SLUG)
+#   Lever      -> jobs.lever.co/SLUG
+#
+# Os exemplos abaixo são PALPITES e PRECISAM SER CONFIRMADOS por você
+# (abra a URL; se carregar a lista de vagas, o slug está certo).
+# -------------------------------------------------------------------------
+#
+# LEGENDA:
+#   [VERIFICADO] = slug confirmado a partir da URL real do board (jun/2026).
+#   [confirmar]  = palpite de alta confiança; se o script logar [WARN] nessa
+#                  empresa, abra o board e corrija o slug (ou comente a linha).
+#   Todas aqui têm reputação de contratar worldwide / LATAM / Brasil — mas a
+#   elegibilidade é POR VAGA, então o próprio script ainda filtra cada uma.
+#
+ats_companies:
+  # ---- Ashby (dev-tools / startups modernas) ----
+  - { name: PostHog,   ats: ashby, slug: posthog }     # [VERIFICADO] all-remote, GMT-8 a GMT+2 (inclui BR)
+  - { name: WorkOS,    ats: ashby, slug: workos }      # [VERIFICADO]
+  - { name: Replit,    ats: ashby, slug: replit }      # [VERIFICADO]
+  - { name: Runway,    ats: ashby, slug: runway-ml }   # [VERIFICADO] remote-friendly globalmente
+  - { name: Deel,      ats: ashby, slug: deel }        # [confirmar] contrata LATAM ativamente
+  - { name: Supabase,  ats: ashby, slug: supabase }    # [confirmar] fully remote global
+  - { name: Linear,    ats: ashby, slug: linear }      # [confirmar]
+  - { name: Mercury,   ats: ashby, slug: mercury }     # [confirmar]
+  - { name: Vercel,    ats: ashby, slug: vercel }      # [confirmar] (se 404, tente ats: greenhouse)
+
+  # ---- Greenhouse (scale-ups / enterprise remote-first) ----
+  - { name: Canonical,  ats: greenhouse, slug: canonical }        # [VERIFICADO] "globally remote"
+  - { name: Automattic, ats: greenhouse, slug: automatticcareers }# [VERIFICADO] 70+ países (note o slug!)
+  - { name: Remote.com, ats: greenhouse, slug: remotecom }        # [VERIFICADO] "true global company"
+  - { name: Mozilla,    ats: greenhouse, slug: mozilla }          # [VERIFICADO]
+  - { name: GitLab,     ats: greenhouse, slug: gitlab }           # [VERIFICADO] (regiões variam por vaga)
+  - { name: Elastic,    ats: greenhouse, slug: elastic }          # [confirmar] distribuída global
+  - { name: Sourcegraph,ats: greenhouse, slug: sourcegraph }      # [confirmar] all-remote
+  - { name: GrafanaLabs,ats: greenhouse, slug: grafanalabs }      # [confirmar] remote (checar região)
+
+  # ---- adicione as suas aqui (regra: abra a página de carreiras, olhe a URL) ----
+  # - { name: SuaEmpresa, ats: lever, slug: suaempresa }
