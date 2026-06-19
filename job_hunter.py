@@ -53,6 +53,8 @@ import feedparser
 import yaml
 
 UA = "Mozilla/5.0 (compatible; vaga-gringa-bot/2.0; +busca pessoal de vagas)"
+UA_BROWSER = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+              "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
 TIMEOUT = 30
 HEADERS = {"User-Agent": UA, "Accept": "application/json, text/plain, */*"}
 SESSION = requests.Session()
@@ -673,6 +675,66 @@ def fetch_github_boards(titles, cutoff=None, **_) -> Iterable[Job]:
                 yield job
 
 
+# LinkedIn — endpoint PÚBLICO "guest" (sem login), o mesmo que os scrapers OSS
+# usam. Não loga, não scrapeia área autenticada. É best-effort: o LinkedIn limita
+# por IP, então em rajada pode vir 429 (a função simplesmente para e segue).
+LINKEDIN_SEARCHES = [
+    ("software engineer", "Brazil"), ("desenvolvedor", "Brazil"),
+    ("full stack developer", "Brazil"), ("backend developer", "Brazil"),
+    ("frontend developer", "Brazil"), ("data engineer", "Brazil"),
+    ("devops engineer", "Brazil"), ("mobile developer", "Brazil"),
+    ("software engineer", "Latin America"), ("software engineer", "Worldwide"),
+]
+
+
+def _l(card: str, pattern: str) -> str:
+    m = re.search(pattern, card, re.S)
+    return clean(m.group(1)) if m else ""
+
+
+def fetch_linkedin(titles, cutoff=None, **_) -> Iterable[Job]:
+    base = "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search"
+    days = max(1, (dt.datetime.now(dt.timezone.utc) - cutoff).days) if cutoff else 7
+    tpr = f"r{days * 86400}"
+    hdr = {"User-Agent": UA_BROWSER, "Accept": "text/html,*/*",
+           "Accept-Language": "en-US,en;q=0.9"}
+    seen = set()
+    for kw, loc in LINKEDIN_SEARCHES:
+        for start in (0, 25, 50):
+            url = (f"{base}?keywords={requests.utils.quote(kw)}"
+                   f"&location={requests.utils.quote(loc)}&f_WT=2&f_TPR={tpr}&start={start}")
+            try:
+                txt = SESSION.get(url, headers=hdr, timeout=TIMEOUT).text
+            except Exception:
+                break
+            cards = txt.split("<li>")
+            if len(cards) <= 1:
+                break
+            for c in cards[1:]:
+                mid = re.search(r"urn:li:jobPosting:(\d+)", c)
+                if not mid or mid.group(1) in seen:
+                    continue
+                seen.add(mid.group(1))
+                title = _l(c, r'base-search-card__title">(.*?)</h3>') or _l(c, r'sr-only">(.*?)</span>')
+                if not is_software_role(title, titles):
+                    continue
+                comp = (_l(c, r'base-search-card__subtitle">\s*<a[^>]*>(.*?)</a>')
+                        or _l(c, r'base-search-card__subtitle"[^>]*>(.*?)</h4>'))
+                loctxt = _l(c, r'job-search-card__location">(.*?)</span>')
+                mu = re.search(r'base-card__full-link[^"]*"\s+href="([^"?]+)', c)
+                md = re.search(r'datetime="([\d-]+)"', c)
+                if not mu:
+                    continue
+                isbr = "bras" in loctxt.lower() or "brazil" in loctxt.lower()
+                job = make_job(comp, title, location_text=loctxt or loc,
+                               structured=[loctxt] if loctxt else None,
+                               date=md.group(1) if md else None, fonte="LinkedIn",
+                               url=mu.group(1), workplace="remote", br=isbr)
+                if job:
+                    yield job
+            time.sleep(0.4)
+
+
 def fetch_programathor(titles, **_) -> Iterable[Job]:
     try:
         raw = GET("https://programathor.com.br/jobs.rss",
@@ -884,6 +946,7 @@ def collect(config, since_days) -> list[Job]:
         "programathor": ("Programathor", fetch_programathor),
         "githubvagas": ("GitHub vagas BR", fetch_github_boards),
         "hackernews": ("HN Who is hiring", fetch_hackernews),
+        "linkedin": ("LinkedIn", fetch_linkedin),
     }
     for key, (label, fn) in board_map.items():
         if src.get(key):

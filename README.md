@@ -17,18 +17,32 @@ Roda local (dois scripts) ou sozinho todo dia (GitHub Actions).
   **Arbeitnow** e **The Muse** (globais → modo estrito, só worldwide explícito).
 
 **Brasil (vagas em R$):**
-- **Gupy** (o maior ATS do Brasil — remoto + híbrido), **Programathor**.
+- **Gupy** (o maior ATS do Brasil — remoto + híbrido), **Programathor**, e os
+  **boards de vagas no GitHub Issues** (frontendbr, backend-br, react-brasil,
+  golang-brasil… — API REST oficial, 9 boards validados).
 
-**Direto na fonte — ATS de ~75 empresas-alvo** (todas validadas em jun/2026):
+**LinkedIn (sem login):**
+- usa o endpoint **público “guest”** de busca de vagas (`jobs-guest/...`) — o mesmo
+  que ferramentas open-source usam. **Não loga nem scrapeia área autenticada.** É
+  *best-effort*: o LinkedIn limita por IP, então às vezes vem menos (a coleta só
+  segue em frente). Busca remoto em Brasil / LatAm / Worldwide.
+
+**Direto na fonte — ATS de ~80 empresas-alvo** (todas validadas em jun/2026):
 - **Greenhouse, Lever, Ashby, SmartRecruiters** (Stripe, Databricks, OpenAI, Notion,
-  Remote.com, QuintoAndar, Spotify, Canonical, GitLab, Mozilla, Cloudflare…).
+  Remote.com, QuintoAndar, Spotify, Canonical, GitLab, Cloudflare…), incluindo
+  **empresas do Y Combinator** (ElevenLabs, Decagon, Fivetran, Checkr, Mintlify…).
 
 **Comunidade:**
-- **Hacker News “Who is hiring”** — a thread mensal, via API do Algolia
-  (modo estrito + filtro que ignora posts de candidatos).
+- **Hacker News “Who is hiring”** — a thread mensal, via API do Algolia (modo
+  estrito + filtro que ignora posts de candidatos). É **fortíssima em startups YC**.
 
-**NÃO cobre, de propósito:** LinkedIn, Indeed, Wellfound, Glassdoor. São muralhas
-anti-bot; automatizar viola os Termos e arrisca banir sua conta. Para esses: manual.
+**NÃO cobre (testado e comprovadamente inviável sem burlar):**
+- **Wellfound** (ex-AngelList) e **Indeed/Glassdoor**: muralha Cloudflare que
+  bloqueia até Chromium real *headed* (testei: HTTP, headless, headed, sitemap e
+  até UA de Googlebot → tudo `403`). Só passaria com proxy residencial pago, o que
+  viola os Termos e quebra direto. O próprio Wellfound convida ao **API parceiro**.
+- **Y Combinator “Work at a Startup”**: a página é só JS (sem dados no HTML) atrás
+  de Cloudflare. Por isso o YC entra pela via confiável: ATS das empresas + HN.
 
 ---
 

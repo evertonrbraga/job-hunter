@@ -92,7 +92,8 @@ sources:
   programathor: true    # feed RSS de vagas tech BR
   githubvagas: true     # boards de vagas BR no GitHub Issues (frontendbr, backend-br…)
   # --- comunidade ---
-  hackernews: true      # thread mensal "Who is hiring" (modo estrito)
+  hackernews: true      # thread mensal "Who is hiring" (modo estrito; muito YC)
+  linkedin: true        # endpoint público "guest" (sem login); best-effort, limita por IP
 
 # ---------------------------------------------------------------------------
 # EMPRESAS-ALVO via ATS — TODAS validadas em jun/2026 (slug retornou vagas).
@@ -120,6 +121,13 @@ ats_companies:
   - { name: Railway,     ats: ashby, slug: railway }
   - { name: Resend,      ats: ashby, slug: resend }
   - { name: Neon,        ats: ashby, slug: neon }
+  # YC (Y Combinator) — validadas jun/2026
+  - { name: ElevenLabs,  ats: ashby, slug: elevenlabs }
+  - { name: Decagon,     ats: ashby, slug: decagon }
+  - { name: Lago,        ats: ashby, slug: lago }
+  - { name: Mintlify,    ats: ashby, slug: mintlify }
+  - { name: Sieve,       ats: ashby, slug: sieve }
+  - { name: Browserbase, ats: ashby, slug: browserbase }
 
   # ---- Greenhouse ----
   - { name: Stripe,         ats: greenhouse, slug: stripe }
@@ -163,6 +171,10 @@ ats_companies:
   - { name: Webflow,        ats: greenhouse, slug: webflow }
   - { name: CircleCI,       ats: greenhouse, slug: circleci }
   - { name: Automattic,     ats: greenhouse, slug: automatticcareers }
+  # YC (Y Combinator) — validadas jun/2026
+  - { name: Fivetran,       ats: greenhouse, slug: fivetran }
+  - { name: Checkr,         ats: greenhouse, slug: checkr }
+  - { name: Amplitude,      ats: greenhouse, slug: amplitude }
 
   # ---- Lever ----
   - { name: Spotify,      ats: lever, slug: spotify }
