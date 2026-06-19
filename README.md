@@ -1,136 +1,135 @@
-# vaga-gringa-bot 🇧🇷→🌍
+# vaga-gringa-bot 🇧🇷→🌍 (v2)
 
-Agregador de vagas de **engenharia de software remotas abertas a brasileiros**.
-Roda sozinho todo dia, filtra por elegibilidade geográfica e acumula tudo numa planilha.
+Agregador de vagas de **engenharia de software abertas a brasileiros**, varrendo o
+máximo de fontes públicas possível. Pega **vagas em US$ (mundo todo)** e **vagas em
+R$ (Brasil)**, filtra por elegibilidade geográfica e acumula tudo numa planilha.
 
----
-
-## ⚠️ Leia primeiro: o que ele faz e o que NÃO faz (sem ilusão)
-
-**Cobre com solidez** (fontes com API/RSS pública, estáveis e dentro dos termos):
-- **RemoteOK, Remotive, We Work Remotely** — boards remotos com API/feed.
-- **Greenhouse / Lever / Ashby** — as APIs públicas de vagas das **suas
-  empresas-alvo** (a parte de maior sinal: vaga direto na fonte).
-
-**NÃO cobre, de propósito:**
-- **LinkedIn, Indeed, Wellfound, Glassdoor.** São muralhas anti-bot. Automatizar
-  navegação logada nesses (principalmente o LinkedIn) **viola os Termos de Uso e
-  tem risco real de banir sua conta**, além de quebrar a cada mudança de layout.
-  Para esses, continue no manual + alertas por e-mail/RSS.
-
-**Sobre o passo "checar People do LinkedIn":** o script **não loga nem scrapeia o
-LinkedIn**. As vagas sem localização especificada entram na planilha com status
-`verificar` — aí você faz a checagem manual (do jeito da screenshot: People →
-filtro "Brazil"/"Brasil", leva segundos) ou olha a página de carreiras da
-empresa, que costuma ser mais explícita. É o caminho seguro.
-
-**Salário:** quando a vaga publica, usa o valor real. Quando não publica, **estima
-por senioridade** (faixas de mediana de mercado, contexto contractor LatAm) e
-marca a linha com `salario_estimado = TRUE`. Trate como chute fundamentado.
+Roda local (dois scripts) ou sozinho todo dia (GitHub Actions).
 
 ---
 
-## A planilha
+## O que ele varre
 
-CSV (`vagas.csv`) acumulado, com as colunas:
+**Boards internacionais (vagas em US$, do mundo todo):**
+- **RemoteOK**, **Remotive** (várias categorias), **We Work Remotely** (vários feeds),
+  **Himalayas** (~86 mil vagas, com restrição de localização *estruturada* + moeda),
+  **Jobicy** (filtro por geografia: Brazil / LatAm / Anywhere),
+  **Arbeitnow** e **The Muse** (globais → modo estrito, só worldwide explícito).
+
+**Brasil (vagas em R$):**
+- **Gupy** (o maior ATS do Brasil — remoto + híbrido), **Programathor**.
+
+**Direto na fonte — ATS de ~75 empresas-alvo** (todas validadas em jun/2026):
+- **Greenhouse, Lever, Ashby, SmartRecruiters** (Stripe, Databricks, OpenAI, Notion,
+  Remote.com, QuintoAndar, Spotify, Canonical, GitLab, Mozilla, Cloudflare…).
+
+**Comunidade:**
+- **Hacker News “Who is hiring”** — a thread mensal, via API do Algolia
+  (modo estrito + filtro que ignora posts de candidatos).
+
+**NÃO cobre, de propósito:** LinkedIn, Indeed, Wellfound, Glassdoor. São muralhas
+anti-bot; automatizar viola os Termos e arrisca banir sua conta. Para esses: manual.
+
+---
+
+## Como ele decide se a vaga aceita brasileiro
+
+Cada vaga é classificada por **localização**:
+
+| status | significa | vai p/ planilha? |
+|---|---|---|
+| `incluida` | diz worldwide/anywhere/global/**LatAm/Brazil**, OU é fonte BR, OU a restrição estruturada inclui o Brasil | ✅ sim |
+| `verificar` | só diz “Remote” genérico, sem dizer a região → você checa à mão | ✅ sim (sinalizada) |
+| *(excluída)* | exige autorização nos EUA / “US only” / “no visa sponsorship” / travada em EMEA/EU/UK/APAC/Canadá/Índia, ou lista só países sem o Brasil | ❌ **descartada** |
+
+Detalhes que evitam falso-positivo:
+- A **inclusão** olha só título+localização (curto e confiável); a **descrição
+  longa** só serve para detectar *exclusão* (assim “global teams” no meio de um texto
+  de vaga US-only não inclui a vaga por engano).
+- **Menção explícita ao Brasil/LatAm no título vence** uma restrição estruturada
+  errada (ex.: vaga “Remote in Brazil” que o board marcou como “United States”).
+
+> Validado no run real: **0 vagas US/UK-only vazaram** para `incluida`.
+
+---
+
+## A planilha (`vagas.csv`)
+
+CSV acumulado e deduplicado, com as colunas:
 
 | coluna | descrição |
 |---|---|
 | `empresa` | nome da empresa |
 | `cargo` | título da vaga |
-| `salario` | valor publicado, ou estimativa (~US$X–Yk) |
+| `senioridade` | Júnior / Pleno / Sênior / Liderança/Staff (derivada do título) |
+| `modelo` | Remoto / Híbrido / Presencial |
+| `salario` | valor publicado, ou estimativa por senioridade |
+| `moeda` | `USD`, `BRL`, `EUR`… |
 | `salario_estimado` | `TRUE` = veio da estimativa, não da vaga |
 | `data_publicacao` | AAAA-MM-DD |
-| `pais` | texto bruto de localização da vaga |
+| `pais` | texto de localização da vaga |
 | `fonte` | board/ATS de origem |
 | `url` | link direto para a vaga |
-| `status_localizacao` | `incluida` (diz worldwide/latam/brazil/...) ou `verificar` (não diz nada — checar à mão) |
+| `status_localizacao` | `incluida` ou `verificar` |
 | `id` | hash p/ deduplicação |
 
-> Vagas claramente fechadas (exigem autorização nos EUA, "US only", "no visa
-> sponsorship", ou travadas em EMEA/EU/UK/APAC) são **descartadas** e não entram.
+**Deduplicação:** por `id` (mesma URL) e, entre *agregadores*, por empresa+cargo
+(a mesma vaga aparece em vários boards). Vagas diretas de ATS/Gupy mantêm cada URL
+distinta. Rodar de novo **não duplica** — só acrescenta o que é novo.
 
-### Quer ver como Google Sheet ao vivo, sem API?
+**Salário:** quando a vaga publica, usa o valor real. Quando não, **estima por
+senioridade** (US$/ano p/ vagas gringas; R$/mês p/ vagas BR) e marca
+`salario_estimado = TRUE`. Trate como chute fundamentado.
 
-Depois que o CSV estiver no GitHub, numa célula do Sheets:
+### Ver como Google Sheet ao vivo (sem API)
+
+Numa célula do Sheets, depois que o CSV estiver no GitHub:
 
 ```
-=IMPORTDATA("https://raw.githubusercontent.com/SEU_USUARIO/SEU_REPO/main/vagas.csv")
+=IMPORTDATA("https://raw.githubusercontent.com/evertonrbraga/job-hunter/main/vagas.csv")
 ```
-
-O Sheets relê o arquivo periodicamente — planilha viva, zero configuração de API.
 
 ---
 
-## Setup
+## Uso
+
+### Localmente (dois scripts prontos)
 
 ```bash
-# 1. criar repo e jogar estes arquivos dentro
-git init && git add . && git commit -m "vaga-gringa-bot"
-
-# 2. ambiente local
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-
-# 3. editar config.yaml -> adicionar suas empresas-alvo (slugs de ATS)
-#    e ajustar software_titles se quiser
+./buscar_7dias.sh    # vagas dos ÚLTIMOS 7 DIAS  (primeira passagem)
+./buscar_24h.sh      # vagas das ÚLTIMAS 24 HORAS (atualização incremental)
 ```
 
-### Primeira passagem (última semana)
+Na primeira execução eles criam o `.venv` e instalam as dependências sozinhos.
+Também dá para chamar direto:
 
 ```bash
-python job_hunter.py --since-days 7
+python job_hunter.py --since-days 7   # ou 1, 14, 30...
 ```
 
-Isso cria/preenche `vagas.csv` com as vagas dos últimos 7 dias.
+### Automático todo dia (GitHub Actions)
 
-### Daí em diante: diário automático às 6h
-
-Suba o repo para o GitHub. O workflow `.github/workflows/daily.yml` roda **todo dia
-às 09:00 UTC = 06:00 de São Paulo**, busca as **últimas 24h** e dá `commit` no
-`vagas.csv` atualizado (cumulativo, sem duplicar).
-
+O workflow `.github/workflows/daily.yml` roda **todo dia às 09:00 UTC = 06:00 de
+São Paulo**, busca as **últimas 24h** e dá `commit` no `vagas.csv` atualizado.
 Para testar agora: GitHub → aba **Actions** → *vaga-gringa-daily* → **Run workflow**.
 
----
-
-## Por que GitHub Actions (e não o Cowork)?
-
-Você perguntou se o Cowork seria melhor. Resposta honesta: **não, para isto.**
-
-- **Cowork** é um app **agêntico interativo** de desktop — excelente para "vá
-  pesquisar/fazer X agora". Mas ele **não roda sozinho às 6h** com a máquina
-  fechada; depende de você e da sessão aberta. Não é um agendador.
-- **GitHub Actions** é **cron na nuvem**: roda no horário marcado mesmo com seu
-  computador desligado, é **grátis** para reppositório público (e tem cota
-  generosa no privado) e encaixa no seu fluxo (você já usa GitHub/Claude Code).
-
-Alternativas válidas: `cron`/`launchd` (Mac) ou Task Scheduler (Windows) — mas só
-rodam com a máquina ligada; ou um VPS baratinho / Raspberry Pi sempre-ligado.
-Actions é o melhor custo-benefício.
-
-**Ressalvas honestas do Actions:** workflows agendados podem **atrasar alguns
-minutos** em horários de pico, e o GitHub **desativa o agendamento após ~60 dias
-sem atividade** no repo. Rodar o "Run workflow" de vez em quando (ou qualquer
-commit) mantém vivo.
+> O agendamento do Actions é desativado após ~60 dias sem atividade no repo;
+> qualquer commit (ou um “Run workflow” manual) reativa.
 
 ---
 
 ## Como estender
 
-- **Mais empresas-alvo:** é só adicionar linhas em `ats_companies` no `config.yaml`.
-- **Mais boards com API:** `ai-jobs.net` e o `Himalayas` expõem API — dá para criar
-  novas funções `fetch_*` no mesmo padrão das existentes.
-- **Hacker News "Who is Hiring":** dá para puxar a thread mensal via API do HN
-  (Algolia) e filtrar por "LATAM/Brazil/Worldwide". Fica para a v2 (o texto é
-  livre e exige parsing mais sujo).
-- **Google Sheets via API (em vez de IMPORTDATA):** posso adicionar escrita direta
-  com `gspread` + service account, se você preferir. É só pedir.
+- **Mais empresas-alvo:** adicione linhas em `ats_companies` no `config.yaml`. Abra a
+  página de carreiras e pegue o slug da URL:
+  `jobs.ashbyhq.com/SLUG` · `boards.greenhouse.io/SLUG` · `jobs.lever.co/SLUG` ·
+  SmartRecruiters `careers/SLUG`. Se o slug logar `[WARN]`, está errado.
+- **Mais palavras de cargo:** edite `software_titles` (já cobre PT + EN).
+- **Mais/menos fontes:** ligue/desligue em `sources:` no `config.yaml`.
 
 ---
 
 ## Aviso
 
-Ferramenta para **uso pessoal** de busca de vagas, consumindo APIs/feeds públicos.
-Respeite os Termos de Uso de cada serviço e não rode em frequência abusiva
-(1x/dia está ótimo).
+Ferramenta de **uso pessoal**, consumindo APIs/feeds públicos. Respeite os Termos de
+cada serviço e não rode em frequência abusiva (1x/dia está ótimo).

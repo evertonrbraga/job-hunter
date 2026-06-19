@@ -1,12 +1,22 @@
 # ---------------------------------------------------------------------------
-# Configuração do vaga-gringa-bot
+# Configuração do vaga-gringa-bot v2
 # ---------------------------------------------------------------------------
 
 # Substrings (minúsculas) que marcam uma vaga como "engenharia de software".
-# Ajuste à vontade. Termos do seu stack ajudam a pegar vagas mal-tituladas.
+# Cobrem PT e EN. Adicione termos do seu stack para pegar vagas mal-tituladas.
 software_titles:
   - software engineer
   - software developer
+  - software development
+  - engenheiro de software
+  - engenheira de software
+  - engenheiro(a) de software
+  - desenvolvedor
+  - desenvolvedora
+  - desenvolvimento de software
+  - programador
+  - programadora
+  - developer
   - frontend
   - front-end
   - front end
@@ -16,61 +26,151 @@ software_titles:
   - full stack
   - full-stack
   - fullstack
+  - web developer
   - web engineer
-  - product engineer
+  - mobile engineer
+  - mobile developer
+  - android
+  - ios
   - react
+  - react native
+  - angular
+  - vue
   - typescript
+  - javascript
   - node
+  - python
+  - java developer
+  - golang
+  - ruby
+  - rails
+  - php
+  - laravel
+  - .net
+  - c#
+  - rust
+  - elixir
+  - kotlin
+  - flutter
+  - devops
+  - sre
+  - site reliability
+  - platform engineer
+  - cloud engineer
+  - infrastructure engineer
+  - data engineer
+  - engenheiro de dados
+  - machine learning engineer
+  - ml engineer
+  - ai engineer
+  - qa engineer
+  - quality engineer
+  - test engineer
+  - engenheiro de qa
+  - security engineer
+  - product engineer
   - swe
-  - engenheir   # pega "engenheiro/engenheira de software" em vagas em PT
+  - tech lead
+  - staff engineer
+  - principal engineer
+  - engineering manager
 
-# Fontes com API/RSS pública (confiáveis). Ligue/desligue conforme quiser.
+# ---------------------------------------------------------------------------
+# FONTES. Cada chave liga/desliga uma fonte. Todas validadas (API/RSS pública).
+# ---------------------------------------------------------------------------
 sources:
-  remoteok: true
-  remotive: true
-  weworkremotely: true
+  # --- boards internacionais (vagas em US$, mundo todo) ---
+  remoteok: true        # API JSON
+  remotive: true        # API JSON (várias categorias)
+  weworkremotely: true  # vários feeds RSS
+  himalayas: true       # ~86k vagas; restrição de local estruturada + moeda
+  jobicy: true          # filtro por geografia (Brazil / LatAm / Anywhere)
+  arbeitnow: true       # majoritariamente UE -> modo estrito (só worldwide)
+  themuse: true         # global por cidade -> modo estrito (só worldwide)
+  # --- Brasil (vagas em R$) ---
+  gupy: true            # maior ATS do Brasil; remoto + híbrido
+  programathor: true    # feed RSS de vagas tech BR
+  githubvagas: true     # boards de vagas BR no GitHub Issues (frontendbr, backend-br…)
+  # --- comunidade ---
+  hackernews: true      # thread mensal "Who is hiring" (modo estrito)
 
-# -------------------------------------------------------------------------
-# SUAS EMPRESAS-ALVO via ATS (Greenhouse / Lever / Ashby).
-# Esta é a parte de MAIOR sinal: vagas direto na fonte, antes do LinkedIn.
-#
-# COMO DESCOBRIR o "slug": abra a página de carreiras da empresa e olhe a URL.
-#   Ashby      -> jobs.ashbyhq.com/SLUG        (ex.: .../posthog  -> slug: posthog)
-#   Greenhouse -> boards.greenhouse.io/SLUG    (ou job-boards.greenhouse.io/SLUG)
-#   Lever      -> jobs.lever.co/SLUG
-#
-# Os exemplos abaixo são PALPITES e PRECISAM SER CONFIRMADOS por você
-# (abra a URL; se carregar a lista de vagas, o slug está certo).
-# -------------------------------------------------------------------------
-#
-# LEGENDA:
-#   [VERIFICADO] = slug confirmado a partir da URL real do board (jun/2026).
-#   [confirmar]  = palpite de alta confiança; se o script logar [WARN] nessa
-#                  empresa, abra o board e corrija o slug (ou comente a linha).
-#   Todas aqui têm reputação de contratar worldwide / LATAM / Brasil — mas a
-#   elegibilidade é POR VAGA, então o próprio script ainda filtra cada uma.
-#
+# ---------------------------------------------------------------------------
+# EMPRESAS-ALVO via ATS — TODAS validadas em jun/2026 (slug retornou vagas).
+# A elegibilidade ainda é checada POR VAGA pelo classificador geográfico.
+# Para adicionar: abra a página de carreiras, veja a URL, pegue o slug.
+#   Ashby -> jobs.ashbyhq.com/SLUG · Greenhouse -> boards.greenhouse.io/SLUG
+#   Lever -> jobs.lever.co/SLUG    · SmartRecruiters -> careers/SLUG
+# ---------------------------------------------------------------------------
 ats_companies:
-  # ---- Ashby (dev-tools / startups modernas) ----
-  - { name: PostHog,   ats: ashby, slug: posthog }     # [VERIFICADO] all-remote, GMT-8 a GMT+2 (inclui BR)
-  - { name: WorkOS,    ats: ashby, slug: workos }      # [VERIFICADO]
-  - { name: Replit,    ats: ashby, slug: replit }      # [VERIFICADO]
-  - { name: Runway,    ats: ashby, slug: runway-ml }   # [VERIFICADO] remote-friendly globalmente
-  - { name: Deel,      ats: ashby, slug: deel }        # [confirmar] contrata LATAM ativamente
-  - { name: Supabase,  ats: ashby, slug: supabase }    # [confirmar] fully remote global
-  - { name: Linear,    ats: ashby, slug: linear }      # [confirmar]
-  - { name: Mercury,   ats: ashby, slug: mercury }     # [confirmar]
-  - { name: Vercel,    ats: ashby, slug: vercel }      # [confirmar] (se 404, tente ats: greenhouse)
+  # ---- Ashby ----
+  - { name: OpenAI,      ats: ashby, slug: openai }
+  - { name: Notion,      ats: ashby, slug: notion }
+  - { name: Ramp,        ats: ashby, slug: ramp }
+  - { name: Cursor,      ats: ashby, slug: cursor }
+  - { name: Replit,      ats: ashby, slug: replit }
+  - { name: Perplexity,  ats: ashby, slug: perplexity }
+  - { name: Baseten,     ats: ashby, slug: baseten }
+  - { name: Supabase,    ats: ashby, slug: supabase }
+  - { name: Runway,      ats: ashby, slug: runway-ml }
+  - { name: Modal,       ats: ashby, slug: modal }
+  - { name: WorkOS,      ats: ashby, slug: workos }
+  - { name: Linear,      ats: ashby, slug: linear }
+  - { name: Render,      ats: ashby, slug: render }
+  - { name: PostHog,     ats: ashby, slug: posthog }
+  - { name: Railway,     ats: ashby, slug: railway }
+  - { name: Resend,      ats: ashby, slug: resend }
+  - { name: Neon,        ats: ashby, slug: neon }
 
-  # ---- Greenhouse (scale-ups / enterprise remote-first) ----
-  - { name: Canonical,  ats: greenhouse, slug: canonical }        # [VERIFICADO] "globally remote"
-  - { name: Automattic, ats: greenhouse, slug: automatticcareers }# [VERIFICADO] 70+ países (note o slug!)
-  - { name: Remote.com, ats: greenhouse, slug: remotecom }        # [VERIFICADO] "true global company"
-  - { name: Mozilla,    ats: greenhouse, slug: mozilla }          # [VERIFICADO]
-  - { name: GitLab,     ats: greenhouse, slug: gitlab }           # [VERIFICADO] (regiões variam por vaga)
-  - { name: Elastic,    ats: greenhouse, slug: elastic }          # [confirmar] distribuída global
-  # - { name: Sourcegraph,ats: greenhouse, slug: sourcegraph }    # board Greenhouse 404 (jun/2026) — provável migração p/ Ashby; reative com o slug certo
-  - { name: GrafanaLabs,ats: greenhouse, slug: grafanalabs }      # [confirmar] remote (checar região)
+  # ---- Greenhouse ----
+  - { name: Stripe,         ats: greenhouse, slug: stripe }
+  - { name: Databricks,     ats: greenhouse, slug: databricks }
+  - { name: MongoDB,        ats: greenhouse, slug: mongodb }
+  - { name: Datadog,        ats: greenhouse, slug: datadog }
+  - { name: Samsara,        ats: greenhouse, slug: samsara }
+  - { name: Canonical,      ats: greenhouse, slug: canonical }
+  - { name: Remote.com,     ats: greenhouse, slug: remotecom }
+  - { name: Toast,          ats: greenhouse, slug: toast }
+  - { name: Oscar,          ats: greenhouse, slug: oscar }
+  - { name: Brex,           ats: greenhouse, slug: brex }
+  - { name: Airbnb,         ats: greenhouse, slug: airbnb }
+  - { name: Elastic,        ats: greenhouse, slug: elastic }
+  - { name: Cloudflare,     ats: greenhouse, slug: cloudflare }
+  - { name: Pinterest,      ats: greenhouse, slug: pinterest }
+  - { name: Scale AI,       ats: greenhouse, slug: scaleai }
+  - { name: Figma,          ats: greenhouse, slug: figma }
+  - { name: Instacart,      ats: greenhouse, slug: instacart }
+  - { name: Reddit,         ats: greenhouse, slug: reddit }
+  - { name: Affirm,         ats: greenhouse, slug: affirm }
+  - { name: GitLab,         ats: greenhouse, slug: gitlab }
+  - { name: Robinhood,      ats: greenhouse, slug: robinhood }
+  - { name: Asana,          ats: greenhouse, slug: asana }
+  - { name: Postman,        ats: greenhouse, slug: postman }
+  - { name: Flexport,       ats: greenhouse, slug: flexport }
+  - { name: Coinbase,       ats: greenhouse, slug: coinbase }
+  - { name: QuintoAndar,    ats: greenhouse, slug: quintoandar }   # 🇧🇷
+  - { name: GrafanaLabs,    ats: greenhouse, slug: grafanalabs }
+  - { name: Gusto,          ats: greenhouse, slug: gusto }
+  - { name: Monzo,          ats: greenhouse, slug: monzo }
+  - { name: Mozilla,        ats: greenhouse, slug: mozilla }
+  - { name: Discord,        ats: greenhouse, slug: discord }
+  - { name: NewRelic,       ats: greenhouse, slug: newrelic }
+  - { name: Faire,          ats: greenhouse, slug: faire }
+  - { name: Dropbox,        ats: greenhouse, slug: dropbox }
+  - { name: Peloton,        ats: greenhouse, slug: peloton }
+  - { name: Twitch,         ats: greenhouse, slug: twitch }
+  - { name: Airtable,       ats: greenhouse, slug: airtable }
+  - { name: Squarespace,    ats: greenhouse, slug: squarespace }
+  - { name: Webflow,        ats: greenhouse, slug: webflow }
+  - { name: CircleCI,       ats: greenhouse, slug: circleci }
+  - { name: Automattic,     ats: greenhouse, slug: automatticcareers }
 
-  # ---- adicione as suas aqui (regra: abra a página de carreiras, olhe a URL) ----
-  # - { name: SuaEmpresa, ats: lever, slug: suaempresa }
+  # ---- Lever ----
+  - { name: Spotify,      ats: lever, slug: spotify }
+  - { name: Mistral AI,   ats: lever, slug: mistral }
+  - { name: Sword Health, ats: lever, slug: swordhealth }
+  - { name: Voodoo,       ats: lever, slug: voodoo }
+  - { name: Kavak,        ats: lever, slug: kavak }              # 🌎 LatAm
+
+  # ---- SmartRecruiters ----
+  - { name: NielsenIQ,    ats: smartrecruiters, slug: NielsenIQ }
+  - { name: Visa,         ats: smartrecruiters, slug: Visa }
