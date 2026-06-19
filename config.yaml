@@ -69,7 +69,7 @@ ats_companies:
   - { name: Mozilla,    ats: greenhouse, slug: mozilla }          # [VERIFICADO]
   - { name: GitLab,     ats: greenhouse, slug: gitlab }           # [VERIFICADO] (regiões variam por vaga)
   - { name: Elastic,    ats: greenhouse, slug: elastic }          # [confirmar] distribuída global
-  - { name: Sourcegraph,ats: greenhouse, slug: sourcegraph }      # [confirmar] all-remote
+  # - { name: Sourcegraph,ats: greenhouse, slug: sourcegraph }    # board Greenhouse 404 (jun/2026) — provável migração p/ Ashby; reative com o slug certo
   - { name: GrafanaLabs,ats: greenhouse, slug: grafanalabs }      # [confirmar] remote (checar região)
 
   # ---- adicione as suas aqui (regra: abra a página de carreiras, olhe a URL) ----
