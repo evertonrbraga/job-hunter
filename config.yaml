@@ -76,6 +76,17 @@ software_titles:
   - engineering manager
 
 # ---------------------------------------------------------------------------
+# GOOGLE SHEETS — escreve a planilha direto no seu Drive a cada execução.
+# Requer um service account (veja o README, seção "Google Sheets").
+# A planilha é SOBRESCRITA com o conteúdo completo e deduplicado do vagas.csv.
+# ---------------------------------------------------------------------------
+google_sheets:
+  enabled: true
+  spreadsheet_id: "1Ovd9Pn9BXiqCAoWlgryTMyM6jlZKWZwnoWFC3QlvTKc"
+  worksheet_gid: 2030542927      # a aba específica (o gid da URL)
+  worksheet_title: "vagas"       # usada se o gid não for encontrado
+
+# ---------------------------------------------------------------------------
 # FONTES. Cada chave liga/desliga uma fonte. Todas validadas (API/RSS pública).
 # ---------------------------------------------------------------------------
 sources:

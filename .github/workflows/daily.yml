@@ -25,7 +25,8 @@ jobs:
 
       - name: Coletar vagas (últimas 24h)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # 5.000 req/h p/ os boards do GitHub
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}            # 5.000 req/h p/ os boards do GitHub
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}  # service account p/ o Sheets
         run: python job_hunter.py --since-days 1 --out vagas.csv --config config.yaml
 
       - name: Commitar planilha atualizada

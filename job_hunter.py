@@ -1020,12 +1020,82 @@ def write_csv(jobs: list[Job], out: Path) -> tuple[int, int]:
     return added, len(rows)
 
 
+# ==========================================================================
+# 10. Google Sheets — escreve a planilha direto no Drive (opcional)
+# ==========================================================================
+
+def _gspread_client():
+    """Autentica via service account (JSON em GOOGLE_CREDENTIALS_JSON ou arquivo)."""
+    try:
+        import gspread
+        from google.oauth2.service_account import Credentials
+    except ImportError:
+        return None, "instale as libs: pip install gspread google-auth"
+    import json as _json
+    info = None
+    raw = os.environ.get("GOOGLE_CREDENTIALS_JSON")
+    if raw:
+        try:
+            info = _json.loads(raw)
+        except Exception:
+            return None, "GOOGLE_CREDENTIALS_JSON não é um JSON válido"
+    else:
+        path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", "credentials.json")
+        if Path(path).exists():
+            info = _json.loads(Path(path).read_text(encoding="utf-8"))
+    if not info:
+        return None, ("sem credenciais — crie um service account, salve como "
+                      "credentials.json (ou em GOOGLE_CREDENTIALS_JSON) e "
+                      "compartilhe a planilha com o e-mail dele")
+    creds = Credentials.from_service_account_info(
+        info, scopes=["https://www.googleapis.com/auth/spreadsheets"])
+    return gspread.authorize(creds), None
+
+
+def push_to_sheets(out_csv: Path, config: dict) -> None:
+    gs = config.get("google_sheets") or {}
+    if not gs.get("enabled"):
+        return
+    sid = gs.get("spreadsheet_id")
+    if not sid:
+        print("  [sheets] falta 'spreadsheet_id' no config — pulando", file=sys.stderr)
+        return
+    client, err = _gspread_client()
+    if not client:
+        print(f"  [sheets] não atualizado ({err})", file=sys.stderr)
+        return
+    with out_csv.open(encoding="utf-8") as f:
+        data = list(csv.reader(f))
+    try:
+        sh = client.open_by_key(sid)
+        ws = None
+        gid = gs.get("worksheet_gid")
+        if gid is not None:
+            try:
+                ws = sh.get_worksheet_by_id(int(gid))
+            except Exception:
+                ws = None
+        if ws is None:
+            try:
+                ws = sh.worksheet(gs.get("worksheet_title", "vagas"))
+            except Exception:
+                ws = sh.sheet1
+        ws.clear()
+        ws.update("A1", data, value_input_option="RAW")
+        print(f"  [sheets] planilha '{sh.title}' atualizada: {len(data)-1} vagas "
+              f"(aba '{ws.title}')")
+    except Exception as exc:
+        print(f"  [sheets] erro ao atualizar: {str(exc)[:160]}", file=sys.stderr)
+
+
 def main():
     ap = argparse.ArgumentParser(description="Agregador de vagas de SWE para brasileiros")
     ap.add_argument("--since-days", type=int, default=1,
                     help="janela em dias (7 na primeira passagem, 1 no diário)")
     ap.add_argument("--out", default="vagas.csv")
     ap.add_argument("--config", default="config.yaml")
+    ap.add_argument("--no-sheets", action="store_true",
+                    help="não enviar para o Google Sheets nesta rodada")
     args = ap.parse_args()
 
     config = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
@@ -1041,6 +1111,9 @@ def main():
     print(f"\nResumo ({time.time()-t0:.0f}s): {len(jobs)} coletadas "
           f"| {inc} incluídas, {ver} a verificar | {brl} em R$, {usd} em US$ "
           f"| {added} novas (total {total}) em {args.out}")
+
+    if not args.no_sheets:
+        push_to_sheets(Path(args.out), config)
 
 
 if __name__ == "__main__":

@@ -87,21 +87,43 @@ CSV acumulado e deduplicado, com as colunas:
 | `status_localizacao` | `incluida` ou `verificar` |
 | `id` | hash p/ deduplicação |
 
-**Deduplicação:** por `id` (mesma URL) e, entre *agregadores*, por empresa+cargo
-(a mesma vaga aparece em vários boards). Vagas diretas de ATS/Gupy mantêm cada URL
-distinta. Rodar de novo **não duplica** — só acrescenta o que é novo.
+**Deduplicação:** por `id` (mesma URL) e por **empresa+cargo** quando há empresa
+(mata a mesma vaga repetida entre fontes e o spam de *body shops* que postam o
+mesmo cargo 7×). Vagas sem empresa (ex.: HN) só deduplicam por URL. Rodar de novo
+**não duplica** — só acrescenta o que é novo.
 
 **Salário:** quando a vaga publica, usa o valor real. Quando não, **estima por
 senioridade** (US$/ano p/ vagas gringas; R$/mês p/ vagas BR) e marca
 `salario_estimado = TRUE`. Trate como chute fundamentado.
 
-### Ver como Google Sheet ao vivo (sem API)
+---
 
-Numa célula do Sheets, depois que o CSV estiver no GitHub:
+## Google Sheets (escrever direto no Drive a cada execução)
 
-```
-=IMPORTDATA("https://raw.githubusercontent.com/evertonrbraga/job-hunter/main/vagas.csv")
-```
+O script **sobrescreve** a aba da sua planilha com o `vagas.csv` completo a cada
+run. Já está configurado em `config.yaml` (`google_sheets:`) apontando para a sua
+planilha. Falta só a **credencial** (uma vez, ~3 min):
+
+1. Acesse <https://console.cloud.google.com> → crie um projeto (ou use um).
+2. **APIs & Services → Enable APIs** → ative **Google Sheets API**.
+3. **Credentials → Create credentials → Service account** → dê um nome → Create.
+4. No service account → aba **Keys → Add key → JSON** → baixa um arquivo `.json`.
+5. Salve esse arquivo como **`credentials.json`** na pasta do projeto
+   (já está no `.gitignore` — **nunca** suba ao GitHub).
+6. Abra o `.json`, copie o `client_email`
+   (algo como `vaga-bot@projeto.iam.gserviceaccount.com`).
+7. Abra sua planilha → **Compartilhar** → cole esse e-mail → permissão **Editor**.
+
+Pronto. Rode `./buscar_7dias.sh` e a planilha é preenchida sozinha.
+Para desligar numa rodada: `python job_hunter.py --since-days 7 --no-sheets`.
+
+**No GitHub Actions (diário):** repo → **Settings → Secrets and variables →
+Actions → New repository secret** → nome `GOOGLE_CREDENTIALS_JSON` → cole **todo o
+conteúdo** do `credentials.json`. O `daily.yml` já repassa esse secret.
+
+> **Alternativa sem credencial (IMPORTDATA):** numa célula do Sheets, com o repo
+> público, `=IMPORTDATA("https://raw.githubusercontent.com/evertonrbraga/job-hunter/main/vagas.csv")`.
+> A planilha relê o CSV sozinha — mas só atualiza quando o CSV é enviado ao GitHub.
 
 ---
 

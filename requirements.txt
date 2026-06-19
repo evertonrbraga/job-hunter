@@ -1,3 +1,6 @@
 requests>=2.31
 feedparser>=6.0
 PyYAML>=6.0
+# Google Sheets (escrita direta na planilha). Se não usar, pode ignorar.
+gspread>=5.10,<6
+google-auth>=2.20
