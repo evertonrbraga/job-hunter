@@ -84,6 +84,7 @@ CSV acumulado e deduplicado, com as colunas:
 | `pais` | texto de localização da vaga |
 | `fonte` | board/ATS de origem |
 | `url` | link direto para a vaga |
+| `email` | e-mail de candidatura, quando o anúncio traz (HN e boards do GitHub) |
 | `status_localizacao` | `incluida` ou `verificar` |
 | `id` | hash p/ deduplicação |
 
@@ -142,6 +143,17 @@ Também dá para chamar direto:
 ```bash
 python job_hunter.py --since-days 7   # ou 1, 14, 30...
 ```
+
+**Filtrar por papel e/ou por candidatura via e-mail:**
+
+```bash
+# só vagas de frontend que dá pra aplicar mandando e-mail (nicho pequeno -> janela maior)
+python job_hunter.py --since-days 90 --role frontend --only-email --out vagas_frontend_email.csv --no-sheets
+```
+
+`--role` aceita `frontend`, `backend`, `mobile`, `devops`, `data` (ou qualquer
+palavra). `--only-email` mantém só anúncios com e-mail de candidatura (na prática,
+**Hacker News** e os **boards do GitHub** — ATS/agregadores aplicam por formulário).
 
 ### Automático todo dia (GitHub Actions)
 

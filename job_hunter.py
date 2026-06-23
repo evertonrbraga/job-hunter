@@ -275,6 +275,47 @@ def clean(s: str) -> str:
     return html.unescape(re.sub(r"<[^>]+>", " ", s or "")).strip()
 
 
+# E-mail de candidatura (quando o anúncio traz). Ignora ruído (noreply, assets…).
+EMAIL_RE = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
+EMAIL_BAD = re.compile(
+    r"noreply|no-reply|do-?not-?reply|example\.(com|org)|sentry|wixpress|"
+    r"users\.noreply|cloudfront|googleapis|\.(png|jpe?g|gif|svg|webp|css|js)$|"
+    r"@(2x|3x)\b|your-?email|email@|name@|@domain", re.I)
+
+
+def extract_email(text: str) -> str:
+    for e in EMAIL_RE.findall(text or ""):
+        if not EMAIL_BAD.search(e):
+            return e.lower()
+    return ""
+
+
+# Filtros de papel (--role). 'frontend' exclui fullstack/backend de propósito.
+def role_match(cargo: str, role: str) -> bool:
+    t = (cargo or "").lower()
+    role = (role or "").lower()
+    if role in ("frontend", "front", "front-end"):
+        if any(x in t for x in ("full stack", "full-stack", "fullstack",
+                                "back end", "back-end", "backend")):
+            return False
+        return any(k in t for k in ("front", "react", "vue", "angular", "svelte",
+                                    "ui engineer", "ui developer", "next.js",
+                                    "nextjs", "tailwind", "web developer"))
+    if role in ("backend", "back-end"):
+        return any(k in t for k in ("back", "api", "node", "python", "java",
+                                    "golang", "rust", ".net", "ruby", "php"))
+    if role == "mobile":
+        return any(k in t for k in ("mobile", "android", "ios", "flutter",
+                                    "react native", "kotlin", "swift"))
+    if role in ("devops", "sre"):
+        return any(k in t for k in ("devops", "sre", "site reliability",
+                                    "platform", "infrastructure", "cloud"))
+    if role in ("data", "dados"):
+        return any(k in t for k in ("data", "dados", "machine learning", "ml ",
+                                    "ai engineer", "analytics"))
+    return role in t
+
+
 def is_software_role(title: str, software_titles: list[str]) -> bool:
     t = (title or "").lower()
     return any(s in t for s in software_titles)
@@ -304,6 +345,7 @@ class Job:
     pais: str
     fonte: str
     url: str
+    email: str              # e-mail de candidatura, se o anúncio trouxer
     status_localizacao: str  # incluida / verificar
     id: str
     _dt: Optional[dt.datetime] = field(default=None, repr=False, compare=False)
@@ -311,7 +353,8 @@ class Job:
 
 def make_job(empresa, cargo, *, salary_raw="", currency="", location_text="",
              structured=None, date=None, fonte="", url="", extra_text="",
-             workplace="", seniority_hint=None, br=False, strict=False) -> Optional[Job]:
+             apply_text="", workplace="", seniority_hint=None, br=False,
+             strict=False) -> Optional[Job]:
     if not url:
         return None
     inc_text = f"{cargo} {location_text}"
@@ -343,6 +386,7 @@ def make_job(empresa, cargo, *, salary_raw="", currency="", location_text="",
         salario=salario, moeda=moeda, salario_estimado=estimado,
         data_publicacao=d.date().isoformat() if d else "",
         pais=pais[:120], fonte=fonte, url=url,
+        email=extract_email(apply_text or extra_text),
         status_localizacao="incluida" if status == "incluir" else "verificar",
         id=jid, _dt=d,
     )
@@ -667,10 +711,12 @@ def fetch_github_boards(titles, cutoff=None, **_) -> Iterable[Job]:
                 continue
             cargo, empresa = _split_company(title)
             wp = "hybrid" if ("híbrid" in low or "hibrid" in low) else ("remote" if remote else "")
+            body = clean(it.get("body", ""))
             job = make_job(empresa, cargo, location_text="Brasil",
                            date=it.get("created_at"), fonte=f"GitHub {board}",
                            url=it.get("html_url", ""), workplace=wp,
-                           seniority_hint=labels, extra_text=" ".join(labels), br=True)
+                           seniority_hint=labels, extra_text=" ".join(labels),
+                           apply_text=body, br=True)
             if job:
                 yield job
 
@@ -886,14 +932,22 @@ def fetch_hackernews(titles, cutoff=None, **_) -> Iterable[Job]:
             continue  # estrito: sem sinal de remoto, fora
         segs = [s.strip() for s in header.split("|") if s.strip()]
         empresa = segs[0][:60] if segs else "Empresa (HN)"
-        cargo = next((s for s in segs[1:] if is_software_role(s, titles)),
-                     "Engenharia de Software (ver descrição)")
+        cargo = next((s for s in segs[1:] if is_software_role(s, titles)), "")
+        if not cargo:  # papel costuma estar no corpo -> detecta p/ o filtro --role
+            full = (header + " " + body).lower()
+            for kw in ("front-end", "frontend", "front end", "react", "vue",
+                       "angular", "back-end", "backend", "full stack", "fullstack",
+                       "mobile", "ios", "android", "devops", "data engineer"):
+                if kw in full:
+                    cargo = f"{kw} (ver descrição HN)"
+                    break
+            cargo = cargo or "Engenharia de Software (ver descrição)"
         # link de candidatura no texto, senão o permalink do comentário
         m = re.search(r"https?://[^\s\"'<>)]+", text)
         url = c.get("url") or (m.group(0) if m else f"https://news.ycombinator.com/item?id={c.get('id')}")
         job = make_job(empresa, cargo[:120], location_text=" | ".join(segs[1:4]),
                        date=c.get("created_at_i"), fonte="HN Who is hiring",
-                       url=url, extra_text=body, strict=False)
+                       url=url, extra_text=body, apply_text=clean(text), strict=False)
         # força a política estrita do HN (incluir OU verificar-com-remoto)
         if job and (job.status_localizacao == "incluida" or "remote" in low):
             yield job
@@ -905,7 +959,7 @@ def fetch_hackernews(titles, cutoff=None, **_) -> Iterable[Job]:
 
 FIELDNAMES = ["empresa", "cargo", "senioridade", "modelo", "salario", "moeda",
               "salario_estimado", "data_publicacao", "pais", "fonte", "url",
-              "status_localizacao", "id"]
+              "email", "status_localizacao", "id"]
 
 # Ordem de prioridade para deduplicação entre fontes (menor = melhor sinal).
 SOURCE_PRIORITY = {
@@ -1096,12 +1150,26 @@ def main():
     ap.add_argument("--config", default="config.yaml")
     ap.add_argument("--no-sheets", action="store_true",
                     help="não enviar para o Google Sheets nesta rodada")
+    ap.add_argument("--role", default="",
+                    help="filtra por papel (ex.: frontend, backend, mobile, devops, data)")
+    ap.add_argument("--only-email", action="store_true",
+                    help="só vagas que trazem e-mail de candidatura")
     args = ap.parse_args()
 
     config = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
     t0 = time.time()
     print(f"Coletando vagas dos últimos {args.since_days} dia(s)...")
     jobs = collect(config, args.since_days)
+
+    if args.role:
+        jobs = [j for j in jobs if role_match(j.cargo, args.role)]
+    if args.only_email:
+        jobs = [j for j in jobs if j.email]
+    if args.role or args.only_email:
+        filtros = " + ".join(filter(None, [args.role and f"papel={args.role}",
+                                           args.only_email and "com e-mail"]))
+        print(f"Filtro aplicado ({filtros}): {len(jobs)} vaga(s)")
+
     added, total = write_csv(jobs, Path(args.out))
 
     inc = sum(1 for j in jobs if j.status_localizacao == "incluida")
